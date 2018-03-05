@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>2gether</title>
+<!--<div class="TalkingWith" id="talkingWith"></div>
+<div class="Invisible" id="indentText">This Text Is For Indenting</div>-->
+
+  <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.19.0.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        <script src="./paper-full.js"></script>
+
+    
+    <link rel="stylesheet" href="chat.css">
+    <script type="text/javascript" src="chat.js"></script>
+</head>
+<body>
+    
+    
+    <div class='AppContainer'>
+
+        <div class='TopBar'>
+            <label class="switch" onmouseup="LiveChat.changeBackgroundColor()"> 
+  <input type="checkbox">
+  <span class="slider round"></span>
+</label>
+
+        <div class='ChannelName' id='channelName'></div>
+                    
+        </div>
+        
+          <div class='OutputArea' id='outputArea'>
+              <h1 id="welcomeText">Welcome to 2gether! <p></p> Incoming Messages Will Appear Here. <p></p> Type /help for a tutorial.</h1>
+                      <canvas class="BackgroundCanvas" id="backgroundCanvas"></canvas>
+
+              </div>
+              <!--
+              <div class='TextOutput' id='user1'>This is what user is typing</div>
+                 <div class='TextOutput' id='user2'> blah blah blah</div>
+    -->
+
+
+        <div class='TypingDiv' id='typingDiv'>
+            
+            <textarea  id="typingBox" placeholder='Enter your username'></textarea>
+            
+            
+<!--
+        <input type="text" id="typingBox" placeholder=" Your Message" onKeyDown="if(event.keyCode==13) LiveChat.resetTypingField();" />
+-->
+            
+</div>
+        <!--<input type="button" id="clearButton" class='CancelButton' value="Clear" onclick="LiveChat.resetTypingField();" />-->
+        
+    </div>
+        
+    </div>
+    <script>
+        
+        
+        $(document).ready(function(){
+            LiveChat.onPageLoad();
+           //  testPaper();
+            //LiveChat.runChainEffect();
+        });
+        
+      function testPaper() {
+            // Get a reference to the canvas object
+            var canvas = document.getElementById('paperCanvas');
+            // Create an empty project and a view for the canvas:
+            paper.setup(canvas);
+            // Create a Paper.js Path to draw a line into it:
+            var path = new paper.Path();
+            // Give the stroke a color
+            path.strokeColor = 'black';
+            var start = new paper.Point(100, 100);
+            // Move to start and draw a line from there
+            path.moveTo(start);
+            // Note that the plus operator on Point objects does not work
+            // in JavaScript. Instead, we need to call the add() function:
+            path.lineTo(start.add([ 200, -50 ]));
+            // Draw the view now:
+            paper.view.draw();
+	   }
+</script>
+    
+    <script id='blankEffect' ignore="true" type="text/paperscript" canvas='backgroundCanvas'>
+    // Adapted from the following Processing example:
+// http://processing.org/learning/topics/follow3.html
+
+// The amount of points in the path:
+var points = 25;
+
+// The distance between the points:
+var length = 35;
+
+var path = new Path({
+	strokeColor: '#02B5C8',
+	strokeWidth: 0,
+	strokeCap: 'round'
+});
+
+var start = view.center / [10, 1];
+for (var i = 0; i < points; i++)
+	path.add(start + new Point(i * length, 0));
+
+function onMouseMove(event) {
+	path.firstSegment.point = event.point;
+	for (var i = 0; i < points - 1; i++) {
+		var segment = path.segments[i];
+		var nextSegment = segment.next;
+		var vector = segment.point - nextSegment.point;
+		vector.length = length;
+		nextSegment.point = segment.point - vector;
+	}
+	path.smooth({ type: 'continuous' });
+}
+
+function onMouseDown(event) {
+	path.fullySelected = true;
+	path.strokeColor = '#02B5C8';
+}
+
+function onMouseUp(event) {
+	path.fullySelected = false;
+	path.strokeColor = '#02B5C8';
+}
+    
+    </script>
+    
+    <script id='candyCrushEffect' ignore="true" type='text/paperscript'>
+    // kynd.info 2014
+
+function Ball(r, p, v) {
+	this.radius = r;
+	this.point = p;
+	this.vector = v;
+	this.maxVec = 15;
+	this.numSegment = Math.floor(r / 3 + 2);
+	this.boundOffset = [];
+	this.boundOffsetBuff = [];
+	this.sidePoints = [];
+	this.path = new Path({
+		fillColor: {
+			hue: Math.random() * 360,
+			saturation: 1,
+			brightness: 1
+		},
+		blendMode: 'lighter'
+	});
+
+	for (var i = 0; i < this.numSegment; i ++) {
+		this.boundOffset.push(this.radius);
+		this.boundOffsetBuff.push(this.radius);
+		this.path.add(new Point());
+		this.sidePoints.push(new Point({
+			angle: 360 / this.numSegment * i,
+			length: 1
+		}));
+	}
+}
+
+Ball.prototype = {
+	iterate: function() {
+		this.checkBorders();
+		if (this.vector.length > this.maxVec)
+			this.vector.length = this.maxVec;
+		this.point += this.vector;
+		this.updateShape();
+	},
+
+	checkBorders: function() {
+		var size = view.size;
+		if (this.point.x < -this.radius)
+			this.point.x = size.width + this.radius;
+		if (this.point.x > size.width + this.radius)
+			this.point.x = -this.radius;
+		if (this.point.y < -this.radius)
+			this.point.y = size.height + this.radius;
+		if (this.point.y > size.height + this.radius)
+			this.point.y = -this.radius;
+	},
+
+	updateShape: function() {
+		var segments = this.path.segments;
+		for (var i = 0; i < this.numSegment; i ++)
+			segments[i].point = this.getSidePoint(i);
+
+		this.path.smooth();
+		for (var i = 0; i < this.numSegment; i ++) {
+			if (this.boundOffset[i] < this.radius / 4)
+				this.boundOffset[i] = this.radius / 4;
+			var next = (i + 1) % this.numSegment;
+			var prev = (i > 0) ? i - 1 : this.numSegment - 1;
+			var offset = this.boundOffset[i];
+			offset += (this.radius - offset) / 15;
+			offset += ((this.boundOffset[next] + this.boundOffset[prev]) / 2 - offset) / 3;
+			this.boundOffsetBuff[i] = this.boundOffset[i] = offset;
+		}
+	},
+
+	react: function(b) {
+		var dist = this.point.getDistance(b.point);
+		if (dist < this.radius + b.radius && dist != 0) {
+			var overlap = this.radius + b.radius - dist;
+			var direc = (this.point - b.point).normalize(overlap * 0.015);
+			this.vector += direc;
+			b.vector -= direc;
+
+			this.calcBounds(b);
+			b.calcBounds(this);
+			this.updateBounds();
+			b.updateBounds();
+		}
+	},
+
+	getBoundOffset: function(b) {
+		var diff = this.point - b;
+		var angle = (diff.angle + 180) % 360;
+		return this.boundOffset[Math.floor(angle / 360 * this.boundOffset.length)];
+	},
+
+	calcBounds: function(b) {
+		for (var i = 0; i < this.numSegment; i ++) {
+			var tp = this.getSidePoint(i);
+			var bLen = b.getBoundOffset(tp);
+			var td = tp.getDistance(b.point);
+			if (td < bLen) {
+				this.boundOffsetBuff[i] -= (bLen  - td) / 2;
+			}
+		}
+	},
+
+	getSidePoint: function(index) {
+		return this.point + this.sidePoints[index] * this.boundOffset[index];
+	},
+
+	updateBounds: function() {
+		for (var i = 0; i < this.numSegment; i ++)
+			this.boundOffset[i] = this.boundOffsetBuff[i];
+	}
+};
+
+//--------------------- main ---------------------
+
+var balls = [];
+var numBalls = 18;
+for (var i = 0; i < numBalls; i++) {
+	var position = Point.random() * view.size;
+	var vector = new Point({
+		angle: 360 * Math.random(),
+		length: Math.random() * 10
+	});
+	var radius = Math.random() * 60 + 60;
+	balls.push(new Ball(radius, position, vector));
+}
+
+function onFrame() {
+	for (var i = 0; i < balls.length - 1; i++) {
+		for (var j = i + 1; j < balls.length; j++) {
+			balls[i].react(balls[j]);
+		}
+	}
+	for (var i = 0, l = balls.length; i < l; i++) {
+		balls[i].iterate();
+	}
+}
+    
+    
+    </script>
+    
+    
+<script id='tadpoleEffect' type="text/paperscript" ignore="true" >
+                                                            // Adapted from Flocking Processing example by Daniel Schiffman:
+// http://processing.org/learning/topics/flocking.html
+
+var Boid = Base.extend({
+	initialize: function(position, maxSpeed, maxForce) {
+		var strength = Math.random() * 0.5;
+		this.acceleration = new Point();
+		this.vector = Point.random() * 2 - 1;
+		this.position = position.clone();
+		this.radius = 30;
+		this.maxSpeed = maxSpeed + strength;
+		this.maxForce = maxForce + strength;
+		this.amount = strength * 10 + 10;
+		this.count = 0;
+		this.createItems();
+	},
+
+	run: function(boids) {
+		this.lastLoc = this.position.clone();
+		if (!groupTogether) {
+			this.flock(boids);
+		} else {
+			this.align(boids);
+		}
+		this.borders();
+		this.update();
+		this.calculateTail();
+		this.moveHead();
+	},
+
+	calculateTail: function() {
+		var segments = this.path.segments,
+			shortSegments = this.shortPath.segments;
+		var speed = this.vector.length;
+		var pieceLength = 5 + speed / 3;
+		var point = this.position;
+		segments[0].point = shortSegments[0].point = point;
+		// Chain goes the other way than the movement
+		var lastVector = -this.vector;
+		for (var i = 1; i < this.amount; i++) {
+			var vector = segments[i].point - point;
+			this.count += speed * 10;
+			var wave = Math.sin((this.count + i * 3) / 300);
+			var sway = lastVector.rotate(90).normalize(wave);
+			point += lastVector.normalize(pieceLength) + sway;
+			segments[i].point = point;
+			if (i < 3)
+				shortSegments[i].point = point;
+			lastVector = vector;
+		}
+		this.path.smooth();
+	},
+
+	createItems: function() {
+		this.head = new Shape.Ellipse({
+			center: [0, 0],
+			size: [13, 8],
+			fillColor: '#FFF'
+		});
+
+		this.path = new Path({
+			strokeColor: '#FFF',
+			strokeWidth: 2,
+			strokeCap: 'round'
+		});
+		for (var i = 0; i < this.amount; i++)
+			this.path.add(new Point());
+
+		this.shortPath = new Path({
+			strokeColor: '#FFF',
+			strokeWidth: 4,
+			strokeCap: 'round'
+		});
+		for (var i = 0; i < Math.min(3, this.amount); i++)
+			this.shortPath.add(new Point());
+	},
+
+	moveHead: function() {
+		this.head.position = this.position;
+		this.head.rotation = this.vector.angle;
+	},
+
+	// We accumulate a new acceleration each time based on three rules
+	flock: function(boids) {
+		var separation = this.separate(boids) * 3;
+		var alignment = this.align(boids);
+		var cohesion = this.cohesion(boids);
+		this.acceleration += separation + alignment + cohesion;
+	},
+
+	update: function() {
+		// Update velocity
+		this.vector += this.acceleration;
+		// Limit speed (vector#limit?)
+		this.vector.length = Math.min(this.maxSpeed, this.vector.length);
+		this.position += this.vector;
+		// Reset acceleration to 0 each cycle
+		this.acceleration = new Point();
+	},
+
+	seek: function(target) {
+		this.acceleration += this.steer(target, false);
+	},
+
+	arrive: function(target) {
+		this.acceleration += this.steer(target, true);
+	},
+
+	borders: function() {
+		var vector = new Point();
+		var position = this.position;
+		var radius = this.radius;
+		var size = view.size;
+		if (position.x < -radius) vector.x = size.width + radius;
+		if (position.y < -radius) vector.y = size.height + radius;
+		if (position.x > size.width + radius) vector.x = -size.width -radius;
+		if (position.y > size.height + radius) vector.y = -size.height -radius;
+		if (!vector.isZero()) {
+			this.position += vector;
+			var segments = this.path.segments;
+			for (var i = 0; i < this.amount; i++) {
+				segments[i].point += vector;
+			}
+		}
+	},
+
+	// A method that calculates a steering vector towards a target
+	// Takes a second argument, if true, it slows down as it approaches
+	// the target
+	steer: function(target, slowdown) {
+		var steer,
+			desired = target - this.position;
+		var distance = desired.length;
+		// Two options for desired vector magnitude
+		// (1 -- based on distance, 2 -- maxSpeed)
+		if (slowdown && distance < 100) {
+			// This damping is somewhat arbitrary:
+			desired.length = this.maxSpeed * (distance / 100);
+		} else {
+			desired.length = this.maxSpeed;
+		}
+		steer = desired - this.vector;
+		steer.length = Math.min(this.maxForce, steer.length);
+		return steer;
+	},
+
+	separate: function(boids) {
+		var desiredSeperation = 60;
+		var steer = new Point();
+		var count = 0;
+		// For every boid in the system, check if it's too close
+		for (var i = 0, l = boids.length; i < l; i++) {
+			var other = boids[i];
+			var vector = this.position - other.position;
+			var distance = vector.length;
+			if (distance > 0 && distance < desiredSeperation) {
+				// Calculate vector pointing away from neighbor
+				steer += vector.normalize(1 / distance);
+				count++;
+			}
+		}
+		// Average -- divide by how many
+		if (count > 0)
+			steer /= count;
+		if (!steer.isZero()) {
+			// Implement Reynolds: Steering = Desired - Velocity
+			steer.length = this.maxSpeed;
+			steer -= this.vector;
+			steer.length = Math.min(steer.length, this.maxForce);
+		}
+		return steer;
+	},
+
+	// Alignment
+	// For every nearby boid in the system, calculate the average velocity
+	align: function(boids) {
+		var neighborDist = 25;
+		var steer = new Point();
+		var count = 0;
+		for (var i = 0, l = boids.length; i < l; i++) {
+			var other = boids[i];
+			var distance = this.position.getDistance(other.position);
+			if (distance > 0 && distance < neighborDist) {
+				steer += other.vector;
+				count++;
+			}
+		}
+
+		if (count > 0)
+			steer /= count;
+		if (!steer.isZero()) {
+			// Implement Reynolds: Steering = Desired - Velocity
+			steer.length = this.maxSpeed;
+			steer -= this.vector;
+			steer.length = Math.min(steer.length, this.maxForce);
+		}
+		return steer;
+	},
+
+	// Cohesion
+	// For the average location (i.e. center) of all nearby boids,
+	// calculate steering vector towards that location
+	cohesion: function(boids) {
+		var neighborDist = 100;
+		var sum = new Point();
+		var count = 0;
+		for (var i = 0, l = boids.length; i < l; i++) {
+			var other = boids[i];
+			var distance = this.position.getDistance(other.position);
+			if (distance > 0 && distance < neighborDist) {
+				sum += other.position; // Add location
+				count++;
+			}
+		}
+		if (count > 0) {
+			sum /= count;
+			// Steer towards the location
+			return this.steer(sum, false);
+		}
+		return sum;
+	}
+});
+
+var heartPath = new Path('M514.69629,624.70313c-7.10205,-27.02441 -17.2373,-52.39453 -30.40576,-76.10059c-13.17383,-23.70703 -38.65137,-60.52246 -76.44434,-110.45801c-27.71631,-36.64355 -44.78174,-59.89355 -51.19189,-69.74414c-10.5376,-16.02979 -18.15527,-30.74951 -22.84717,-44.14893c-4.69727,-13.39893 -7.04297,-26.97021 -7.04297,-40.71289c0,-25.42432 8.47119,-46.72559 25.42383,-63.90381c16.94775,-17.17871 37.90527,-25.76758 62.87354,-25.76758c25.19287,0 47.06885,8.93262 65.62158,26.79834c13.96826,13.28662 25.30615,33.10059 34.01318,59.4375c7.55859,-25.88037 18.20898,-45.57666 31.95215,-59.09424c19.00879,-18.32178 40.99707,-27.48535 65.96484,-27.48535c24.7373,0 45.69531,8.53564 62.87305,25.5957c17.17871,17.06592 25.76855,37.39551 25.76855,60.98389c0,20.61377 -5.04102,42.08691 -15.11719,64.41895c-10.08203,22.33203 -29.54687,51.59521 -58.40723,87.78271c-37.56738,47.41211 -64.93457,86.35352 -82.11328,116.8125c-13.51758,24.0498 -23.82422,49.24902 -30.9209,75.58594z');
+
+var boids = [];
+var groupTogether = false;
+
+// Add the boids:
+for (var i = 0; i < 30; i++) {
+	var position = Point.random() * view.size;
+	boids.push(new Boid(position, 10, 0.05));
+}
+
+
+function onFrame(event) {
+	for (var i = 0, l = boids.length; i < l; i++) {
+		if (groupTogether) {
+			var length = ((i + event.count / 30) % l) / l * heartPath.length;
+			var point = heartPath.getPointAt(length);
+			if (point)
+				boids[i].arrive(point);
+		}
+		boids[i].run(boids);
+	}
+}
+
+// Reposition the heart path whenever the window is resized:
+function onResize(event) {
+	heartPath.fitBounds(view.bounds);
+	heartPath.scale(0.8);
+}
+
+function onMouseDown(event) {
+	groupTogether = !groupTogether;
+}  
+                                                               
+                                                               
+</script>
+    
+    <script id='rainbowEffect' ignore="true" type='text/paperscript'>
+        // A tribute to Nyan Cat http://www.youtube.com/watch?v=QH2-TGUlwu4
+var mediaElement;
+var playing = false;
+
+
+var mousePos = view.center + [view.bounds.width / 3, 100];
+var position = view.center;
+
+function onFrame(event) {
+	position += (mousePos - position) / 10;
+	var vector = (view.center - position) / 10;
+	moveStars(vector * 3);
+	moveRainbow(vector, event);
+}
+
+function onMouseMove(event) {
+	mousePos = event.point;
+}
+/*
+function onKeyDown(event) {
+	if (event.key == 'space')
+		project.activeLayer.selected = !project.activeLayer.selected;
+}
+*/
+var moveStars = new function() {
+	// The amount of symbol we want to place;
+	var count = 50;
+
+	// Create a symbol, which we will use to place instances of later:
+	var path = new Path.Circle({
+		center: [0, 0],
+		radius: 5,
+		fillColor: 'white',
+		strokeColor: 'black'
+	});
+
+	var symbol = new Symbol(path);
+
+	// Place the instances of the symbol:
+	for (var i = 0; i < count; i++) {
+		// The center position is a random point in the view:
+		var center = Point.random() * view.size;
+		var placed = symbol.place(center);
+		placed.scale(i / count + 0.01);
+		placed.data = {
+			vector: new Point({
+				angle: Math.random() * 360,
+				length : (i / count) * Math.random() / 5
+			})
+		};
+	}
+
+	var vector = new Point({
+		angle: 45,
+		length: 0
+	});
+
+	function keepInView(item) {
+		var position = item.position;
+		var viewBounds = view.bounds;
+		if (position.isInside(viewBounds))
+			return;
+		var itemBounds = item.bounds;
+		if (position.x > viewBounds.width + 5) {
+			position.x = -item.bounds.width;
+		}
+
+		if (position.x < -itemBounds.width - 5) {
+			position.x = viewBounds.width;
+		}
+
+		if (position.y > viewBounds.height + 5) {
+			position.y = -itemBounds.height;
+		}
+
+		if (position.y < -itemBounds.height - 5) {
+			position.y = viewBounds.height
+		}
+	}
+
+	return function(vector) {
+		// Run through the active layer's children list and change
+		// the position of the placed symbols:
+		var layer = project.activeLayer;
+		for (var i = 0; i < count; i++) {
+			var item = layer.children[i];
+			var size = item.bounds.size;
+			var length = vector.length / 10 * size.width / 10;
+			item.position += vector.normalize(length) + item.data.vector;
+			keepInView(item);
+		}
+	};
+};
+
+var moveRainbow = new function() {
+	var paths = [];
+	var colors = ['red', 'orange', 'yellow', 'lime', 'blue', 'purple'];
+	for (var i = 0; i < colors.length; i++) {
+		var path = new Path({
+			fillColor: colors[i]
+		});
+		paths.push(path);
+	}
+
+	var count = 30;
+	var group = new Group(paths);
+	var headGroup;
+	var eyePosition = new Point();
+	var eyeFollow = (Point.random() - 0.5);
+	var blinkTime = 200;
+	function createHead(vector, count) {
+		var eyeVector = (eyePosition - eyeFollow);
+		eyePosition -= eyeVector / 4;
+		if (eyeVector.length < 0.00001)
+			eyeFollow = (Point.random() - 0.5);
+		if (headGroup)
+			headGroup.remove();
+		var top = paths[0].lastSegment.point;
+		var bottom = paths[paths.length - 1].firstSegment.point;
+		var radius = (bottom - top).length / 2;
+		var circle = new Path.Circle({
+			center: top + (bottom - top) / 2,
+			radius: radius,
+			fillColor: 'black'
+		});
+		circle.scale(vector.length / 100, 1);
+		circle.rotate(vector.angle, circle.center);
+
+		innerCircle = circle.clone();
+		innerCircle.scale(0.5);
+		innerCircle.fillColor = (count % blinkTime < 3)
+			|| (count % (blinkTime + 5) < 3) ? 'black' : 'white';
+		if (count % (blinkTime + 40) == 0)
+			blinkTime = Math.round(Math.random() * 40) + 200;
+		var eye = circle.clone();
+		eye.position += eyePosition * radius;
+		eye.scale(0.15, innerCircle.position);
+		eye.fillColor = 'black';
+		headGroup = new Group(circle, innerCircle, eye);
+	}
+
+	return function(vector, event) {
+		var vector = (view.center - position) / 10;
+
+		if (vector.length < 5)
+			vector.length = 5;
+		count += vector.length / 100;
+		group.translate(vector);
+		var rotated = vector.rotate(90);
+		var middle = paths.length / 2;
+		for (var j = 0; j < paths.length; j++) {
+			var path = paths[j];
+			var nyanSwing = playing ? Math.sin(event.count / 2) * vector.length : 1;
+			var unitLength = vector.length * (2 + Math.sin(event.count / 10)) / 2;
+			var length = (j - middle) * unitLength + nyanSwing;
+			var top = view.center + rotated.normalize(length);
+			var bottom = view.center + rotated.normalize(length + unitLength);
+			path.add(top);
+			path.insert(0, bottom);
+			if (path.segments.length > 200) {
+				var index = Math.round(path.segments.length / 2);
+				path.segments[index].remove();
+				path.segments[index - 1].remove();
+			}
+			path.smooth();
+		}
+		createHead(vector, event.count);
+		
+	}
+}
+    </script>
+    
+    <script id='ballsEffect' ignore="true" type='text/paperscript'>
+        var Ball = function(point, vector) {
+	if (!vector || vector.isZero()) {
+		this.vector = Point.random() * 5;
+	} else {
+		this.vector = vector * 2;
+	}
+	this.point = point;
+	this.dampen = 0.4;
+	this.gravity = 3;
+	this.bounce = -0.6;
+
+	var color = {
+		hue: Math.random() * 360,
+		saturation: 1,
+		brightness: 1
+	};
+	var gradient = new Gradient([color, 'black'], true);
+
+	var radius = this.radius = 50 * Math.random() + 30;
+	// Wrap CompoundPath in a Group, since CompoundPaths directly 
+	// applies the transformations to the content, just like Path.
+	var ball = new CompoundPath({
+		children: [
+			new Path.Circle({
+				radius: radius
+			}),
+			new Path.Circle({
+				center: radius / 8,
+				radius: radius / 3
+			})
+		],
+		fillColor: new Color(gradient, 0, radius, radius / 8),
+	});
+
+	this.item = new Group({
+		children: [ball],
+		transformContent: false,
+		position: this.point
+	});
+}
+
+Ball.prototype.iterate = function() {
+	var size = view.size;
+	this.vector.y += this.gravity;
+	this.vector.x *= 0.99;
+	var pre = this.point + this.vector;
+	if (pre.x < this.radius || pre.x > size.width - this.radius)
+		this.vector.x *= -this.dampen;
+	if (pre.y < this.radius || pre.y > size.height - this.radius) {
+		if (Math.abs(this.vector.x) < 3)
+			this.vector = Point.random() * [150, 100] + [-75, 20];
+		this.vector.y *= this.bounce;
+	}
+
+	var max = Point.max(this.radius, this.point + this.vector);
+	this.item.position = this.point = Point.min(max, size - this.radius);
+	this.item.rotate(this.vector.x);
+};
+
+
+var balls = [];
+for (var i = 0; i < 10; i++) {
+	var position = Point.random() * view.size,
+		vector = (Point.random() - [0.5, 0]) * [50, 100],
+		ball = new Ball(position, vector);
+	balls.push(ball);
+}
+
+var textItem = new PointText({
+	point: [20, 30],
+	fillColor: 'black',
+});
+
+var lastDelta;
+function onMouseDrag(event) {
+	lastDelta = event.delta;
+}
+
+function onMouseUp(event) {
+	var ball = new Ball(event.point, lastDelta);
+	balls.push(ball);
+	lastDelta = null;
+}
+
+function onFrame() {
+	for (var i = 0, l = balls.length; i < l; i++)
+		balls[i].iterate();
+}
+    </script>
+    
+    <script id='rippleEffect' ignore="true" type='text/paperscript'>
+        var mousePoint = view.center;
+var amount = 25;
+var colors = ['red', 'white', 'blue', 'white'];
+
+for (var i = 0; i < amount; i++) {
+	var rect = new Rectangle([0, 0], [25, 25]);
+	rect.center = mousePoint;
+	var path = new Path.Rectangle(rect, 6);
+	path.fillColor = colors[i % 4];
+	var scale = (1 - i / amount) * 20;
+	path.scale(scale);
+}
+
+function onMouseMove(event) {
+	mousePoint = event.point;
+}
+
+var children = project.activeLayer.children;
+function onFrame(event) {
+	for (var i = 0, l = children.length; i < l; i++) {
+		var item = children[i];
+		var delta = (mousePoint - item.position) / (i + 5);
+		item.rotate(Math.sin((event.count + i) / 10) * 7);
+		if (delta.length > 0.1)
+			item.position += delta;
+	}
+}
+    </script>
+    
+    <script id='spinEffect' ignore="true" type='text/paperscript'>
+        var point = view.center;
+
+var colors = [];
+var cycles = 4;
+for (var i = 0, l = 60; i < l; i++) {
+	var brightness = 1 - (i / l) * 1.5;
+	var hue = i / l * cycles * 360;
+	var color = {
+		hue: hue,
+		saturation: 1,
+		brightness: brightness
+	};
+	colors.push(color);
+}
+
+var radius = Math.max(view.size.width, view.size.height) * 0.75;
+
+var path = new Path.Rectangle({
+	rectangle: view.bounds,
+	fillColor: {
+		origin: point,
+		destination: point + [radius, 0],
+		gradient: {
+			stops: colors,
+			radial: true
+		}
+	}
+});
+
+var color = path.fillColor;
+var gradient = color.gradient;
+var mouseDown = false;
+var mousePoint = view.center;
+
+function onMouseDown(event) {
+	mouseDown = true;
+	mousePoint = event.point;
+}
+
+function onMouseDrag(event) {
+	mousePoint = event.point;
+}
+
+function onMouseUp(event) {
+	vector.length = 10;
+	mouseDown = false;
+}
+
+var grow = false;
+var vector = new Point(150, 0);
+
+function onFrame() {
+	for (var i = 0, l = gradient.stops.length; i < l; i++)
+		gradient.stops[i].color.hue -= 20;
+	if (grow && vector.length > 300) {
+		grow = false;
+	} else if (!grow && vector.length < 75) {
+		grow = true;
+	}
+	if (mouseDown) {
+		point = point + (mousePoint - point) / 10;
+	} else {
+		vector.length += (grow ? 1 : -1);
+		vector.angle += 5;
+	}
+	color.highlight = mouseDown ? point : point + vector;
+}
+
+function onResize(event) {
+	point = view.center;
+	path.bounds = view.bounds;
+	var color = path.fillColor;
+	color.origin = point;
+	var radius = Math.max(view.size.width, view.size.height) * 0.75;
+	color.destination = point + [radius, 0];
+}
+    </script>
+
+
+  
+</body>
+</html>

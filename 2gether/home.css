@@ -1,0 +1,123 @@
+@-webkit-keyframes color-change {
+    0% { color: #E72D63; }
+    25% { color: blue; }
+    50% { color: green; }
+    75% { color: purple; }
+    100% { color: #E72D63; }
+}
+@-moz-keyframes color-change {
+    0% { color: #E72D63; }
+    25% { color: blue; }
+    50% { color: green; }
+    75% { color: purple; }
+    100% { color: #E72D63; }
+}
+@-ms-keyframes color-change {
+    0% { color: #E72D63; }
+    25% { color: blue; }
+    50% { color: green; }
+    75% { color: purple; }
+    100% { color: #E72D63; }
+}
+@-o-keyframes color-change {
+    0% { color: #E72D63; }
+    25% { color: blue; }
+    50% { color: green; }
+    75% { color: purple; }
+    100% { color: #E72D63; }
+}
+@keyframes color-change {
+    0% { color: #E72D63; }
+    25% { color: blue; }
+    50% { color: green; }
+    75% { color: purple; }
+    100% { color: #E72D63; }
+}
+
+a{
+    text-decoration: none;
+}
+
+
+
+    #title {
+     text-align: center;
+     color: #E72D63;
+     font-size: 70px;
+    -webkit-animation: color-change 1s infinite;
+    -moz-animation: color-change 1s infinite;
+    -o-animation: color-change 1s infinite;
+    -ms-animation: color-change 1s infinite;
+    animation: color-change 1s infinite;
+}
+ h2 {
+     color:white;
+     text-align: center;
+     font-size: 25px;
+     
+}
+h4 {
+    font-size: 23.4px;
+    text-align: center;
+}
+
+ .TitleText {
+     font-size: 35px;
+     color:#E72D63;
+     text-align: center;
+}
+ #titleOne {
+     color: #FEEB15;
+     text-decoration: underline;
+     text-align: center;
+}
+ .BasicText {
+     color:white;
+     text-align: center;
+}
+ #textOne {
+     
+     text-align: center;
+}
+ #joinNow {
+     font-size: 70px;
+     color: #E72D63;
+     position: absolute;
+     text-align: center;
+     left:30%;
+     right: 30%;
+     top: 40%;
+     text-decoration: none;
+}
+ body {
+     background-color: #02B5C8;
+}
+.JoinButton{
+    
+        font-family: Circular,-apple-system,BlinkMacSystemFont,Roboto,Helvetica Neue,sans-serif !important;
+        font-size: 19px !important;
+        line-height: 15px !important;
+        letter-spacing: undefined !important;
+        padding-top: 0px !important;
+        padding-bottom: 0px !important;
+        color: #ffffff !important;
+        padding-right: 18px !important;
+        padding-left: 18px !important;
+        border-radius: 4px !important;
+        border: 0px !important;
+        background: #E72D63 !important;
+        
+        height: 48px !important;
+        text-align: center !important;
+        display: block;
+    margin-left:auto;
+    margin-right:auto;
+    
+        white-space: nowrap !important;
+       
+        cursor: pointer;
+      
+        
+    }
+
+ 
